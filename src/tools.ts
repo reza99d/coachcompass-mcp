@@ -73,9 +73,9 @@ const filterShape = {
   category: z.enum(['business', 'life', 'fitness', 'relationships']).optional().describe('Coaching category.'),
   country: z.string().max(60).optional().describe("Country in English, e.g. 'Sweden', 'Denmark', 'United Kingdom'. Common local names like 'Sverige' also work."),
   city: z.string().max(60).optional().describe("City or region, e.g. 'Stockholm'."),
-  languages: z.array(z.string().max(40)).max(3).optional().describe("Languages the coach lists, English names, e.g. ['Swedish']. Matches ANY. Few coaches list languages yet, so this filter is very narrow — for e.g. a Swedish-speaking coach prefer country: 'Sweden' unless the user insists."),
+  languages: z.array(z.string().max(40)).max(3).optional().describe("Languages the coach lists, English names, e.g. ['Swedish']. Matches ANY. Few coaches list languages yet, so this filter matches few coaches."),
   specialties: z.array(z.string().max(40)).max(5).optional().describe("Specialty keywords, e.g. ['leadership', 'career']. Matches ANY."),
-  gender: z.enum(['male', 'female', 'non-binary']).optional().describe('Only if the user explicitly asks for a coach of a specific gender.'),
+  gender: z.enum(['male', 'female', 'non-binary']).optional().describe('Coach gender.'),
   max_hourly_rate: z.number().min(0).max(1_000_000).optional().describe("Maximum hourly rate in the coach's own currency (whole units). Excludes coaches without a listed price."),
   min_years_experience: z.number().int().min(0).max(80).optional().describe('Minimum years of coaching experience.'),
   verified_only: z.boolean().optional().describe('Only coaches CoachCompass has verified.'),
@@ -92,7 +92,7 @@ const availabilitySchema = z.object({
   coach: coachRef,
   days: z.number().int().min(1).max(14).default(7).describe('How many days ahead to look (1-14).'),
   timezone: z.string().max(64).default('Europe/Stockholm').describe("The user's IANA timezone for displaying times, e.g. 'Europe/Stockholm', 'America/New_York'."),
-  service_id: z.string().max(64).optional().describe('A specific service id from get_coach. If omitted, the first bookable service is used.'),
+  service_id: z.string().max(64).optional().describe('Optional service id (as listed in a coach profile). If omitted, the first bookable service is used.'),
 });
 const featuredSchema = z.object({ limit: z.number().int().min(1).max(10).default(6) });
 const articlesSchema = z.object({
@@ -137,8 +137,8 @@ export function registerTools(server: McpServer, caller: CallerInfo) {
     title: 'Search coaches',
     description:
       'Search the CoachCompass directory of professional coaches (business, life, fitness, relationships). ' +
-      'All filters are optional and AND-combined; call with few filters rather than none when the need is vague. ' +
-      'Returns matching coaches ranked premium > verified > experience, with profile links and total_found.',
+      'All filters are optional and combined with AND. ' +
+      'Returns up to 10 matching coaches ranked by paid plan (is_premium), then verified, then years of experience, with profile links and the total number of matches (total_found).',
     inputSchema: searchSchema,
     annotations: ro('Search coaches'),
     _meta: widgetMeta('Searching coaches…', 'Found coaches'),
@@ -161,7 +161,7 @@ export function registerTools(server: McpServer, caller: CallerInfo) {
     title: 'Get coach profile',
     description:
       "Get one coach's full public profile: bio, specialties, languages, price, services with prices, rating, " +
-      'podcasts/videos, and links to their profile and booking page. Use the slug from search results.',
+      'podcasts/videos, and links to their profile and booking page. Takes the coach slug returned in search results.',
     inputSchema: getCoachSchema,
     annotations: ro('Get coach profile'),
     _meta: widgetMeta('Opening coach profile…', 'Coach profile'),
@@ -258,7 +258,7 @@ export function registerTools(server: McpServer, caller: CallerInfo) {
 
   server.registerTool('count_coaches', {
     title: 'Count coaches',
-    description: 'Count how many published coaches match the filters (all optional; no filters = size of the whole directory). Use for "how many" questions.',
+    description: 'Count how many published coaches match the filters (all optional; with no filters it returns the size of the whole directory).',
     inputSchema: countSchema,
     annotations: ro('Count coaches'),
   }, guarded('count_coaches', caller, async (a: z.infer<typeof countSchema>) => {
@@ -268,7 +268,7 @@ export function registerTools(server: McpServer, caller: CallerInfo) {
 
   server.registerTool('list_directory_facets', {
     title: 'List directory filters',
-    description: 'List the categories, countries and languages available in the directory, with coach counts. Use to pick valid filter values.',
+    description: 'List the categories, countries and languages available in the directory, with coach counts.',
     inputSchema: facetsSchema,
     annotations: ro('List directory filters'),
   }, guarded('list_directory_facets', caller, async () => {
@@ -291,7 +291,7 @@ export function registerTools(server: McpServer, caller: CallerInfo) {
 
   registerAppTool(server, 'get_featured_coaches', {
     title: 'Featured coaches',
-    description: 'Get the coaches currently featured on the CoachCompass homepage. Good for "show me some coaches" with no specific need.',
+    description: 'Get the coaches currently featured on the CoachCompass homepage (coaches on paid plans first).',
     inputSchema: featuredSchema,
     annotations: ro('Featured coaches'),
     _meta: widgetMeta('Loading featured coaches…', 'Featured coaches'),
