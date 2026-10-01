@@ -14,6 +14,8 @@ import { availability, invoke, select, UpstreamError } from './upstream.js';
 import { WIDGET_URI } from './widget.js';
 
 const READ_ONLY = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const;
+/** Tool annotations incl. the human-readable title directories show. */
+const ro = (title: string) => ({ title, ...READ_ONLY });
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,150}$/i;
 
@@ -84,7 +86,7 @@ const searchSchema = z.object({
   offset: z.number().int().min(0).max(500).default(0).describe('For paging through more results.'),
 });
 const countSchema = z.object(filterShape);
-const coachRef = z.string().min(1).max(160).describe("The coach's slug (from a search result) or id.");
+const coachRef = z.string().min(1).max(160).describe("The coach's slug, e.g. 'anna-svensson' (from search results).");
 const getCoachSchema = z.object({ coach: coachRef });
 const availabilitySchema = z.object({
   coach: coachRef,
@@ -138,7 +140,7 @@ export function registerTools(server: McpServer, caller: CallerInfo) {
       'All filters are optional and AND-combined; call with few filters rather than none when the need is vague. ' +
       'Returns matching coaches ranked premium > verified > experience, with profile links and total_found.',
     inputSchema: searchSchema,
-    annotations: READ_ONLY,
+    annotations: ro('Search coaches'),
     _meta: widgetMeta('Searching coaches…', 'Found coaches'),
   }, guarded('search_coaches', caller, async (a: z.infer<typeof searchSchema>) => {
     const { limit, offset, ...filters } = a;
@@ -159,9 +161,9 @@ export function registerTools(server: McpServer, caller: CallerInfo) {
     title: 'Get coach profile',
     description:
       "Get one coach's full public profile: bio, specialties, languages, price, services with prices, rating, " +
-      'podcasts/videos, and links to their profile and booking page. Use the slug or id from search results.',
+      'podcasts/videos, and links to their profile and booking page. Use the slug from search results.',
     inputSchema: getCoachSchema,
-    annotations: READ_ONLY,
+    annotations: ro('Get coach profile'),
     _meta: widgetMeta('Opening coach profile…', 'Coach profile'),
   }, guarded('get_coach', caller, async ({ coach }: z.infer<typeof getCoachSchema>) => {
     const detail = await cached(`coach:${coach}`, 60_000, async () => {
@@ -214,7 +216,7 @@ export function registerTools(server: McpServer, caller: CallerInfo) {
       "List a coach's open booking slots for the next 1-14 days, shown in the user's timezone. Only coaches who take " +
       'bookings on CoachCompass have slots; otherwise this returns their external booking or profile link.',
     inputSchema: availabilitySchema,
-    annotations: READ_ONLY,
+    annotations: ro('Get coach availability'),
     _meta: { 'openai/toolInvocation/invoking': 'Checking availability…', 'openai/toolInvocation/invoked': 'Availability' },
   }, guarded('get_coach_availability', caller, async (a: z.infer<typeof availabilitySchema>) => {
     const tz = validTimezone(a.timezone);
@@ -258,7 +260,7 @@ export function registerTools(server: McpServer, caller: CallerInfo) {
     title: 'Count coaches',
     description: 'Count how many published coaches match the filters (all optional; no filters = size of the whole directory). Use for "how many" questions.',
     inputSchema: countSchema,
-    annotations: READ_ONLY,
+    annotations: ro('Count coaches'),
   }, guarded('count_coaches', caller, async (a: z.infer<typeof countSchema>) => {
     const { count } = await cached(`count:${JSON.stringify(a)}`, 60_000, () => select(countDescriptor(a as CoachFilters)));
     return { content: [{ type: 'text', text: `${count} coach${count === 1 ? '' : 'es'} on CoachCompass match.` }], structuredContent: { kind: 'count', total: count } };
@@ -268,7 +270,7 @@ export function registerTools(server: McpServer, caller: CallerInfo) {
     title: 'List directory filters',
     description: 'List the categories, countries and languages available in the directory, with coach counts. Use to pick valid filter values.',
     inputSchema: facetsSchema,
-    annotations: READ_ONLY,
+    annotations: ro('List directory filters'),
   }, guarded('list_directory_facets', caller, async () => {
     const facets = await cached('facets', 10 * 60_000, async () => {
       const { rows } = await select({ table: 'coaches', columns: 'category,country,languages', filters: [{ col: 'is_demo', op: 'eq', val: false }], limit: 10_000 });
@@ -291,7 +293,7 @@ export function registerTools(server: McpServer, caller: CallerInfo) {
     title: 'Featured coaches',
     description: 'Get the coaches currently featured on the CoachCompass homepage. Good for "show me some coaches" with no specific need.',
     inputSchema: featuredSchema,
-    annotations: READ_ONLY,
+    annotations: ro('Featured coaches'),
     _meta: widgetMeta('Loading featured coaches…', 'Featured coaches'),
   }, guarded('get_featured_coaches', caller, async ({ limit }: z.infer<typeof featuredSchema>) => {
     const res = await cached(`featured:${limit}`, 5 * 60_000, () => invoke<{ coaches?: Array<Record<string, unknown>> }>('get-featured-coaches', { limit }));
@@ -307,7 +309,7 @@ export function registerTools(server: McpServer, caller: CallerInfo) {
     title: 'Search coaching articles & FAQ',
     description: 'Search CoachCompass articles and FAQs for explanatory content about coaching (what it is, how it works, how to choose a coach, pricing). Returns up to 5 hits with links.',
     inputSchema: articlesSchema,
-    annotations: READ_ONLY,
+    annotations: ro('Search coaching articles & FAQ'),
   }, guarded('search_articles', caller, async ({ query }: z.infer<typeof articlesSchema>) => {
     const ws = sanitizeTerm(query, 120).split(' ').filter((w) => w.length >= 3).slice(0, 4);
     if (!ws.length) return errorResult('Please give a more specific topic (at least one word of 3+ letters).');

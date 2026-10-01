@@ -142,7 +142,10 @@ mcp "$PUBLIC/mcp" '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' c
 mcp "$PUBLIC/mcp" '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search_coaches","arguments":{"query":"leadership","limit":3}}}' coachcompass.co | python3 -c "$CHECK" search || die "public search failed"
 [ "$(code $PUBLIC/legal/ai-app-privacy)" = 200 ] || die "/legal/ai-app-privacy not 200"
 [ "$(code $PUBLIC/legal/ai-app-terms)" = 200 ] || die "/legal/ai-app-terms not 200"
-ok "public MCP + legal pages verified"
+for wk in oauth-protected-resource oauth-protected-resource/mcp oauth-authorization-server openid-configuration; do
+  [ "$(code $PUBLIC/.well-known/$wk)" = 404 ] || die "/.well-known/$wk must be 404 (no-auth server)"
+done
+ok "public MCP + legal pages verified; OAuth discovery answers 404 (no sign-in)"
 
 # ---------------------------------------------------------------- 8. housekeeping
 say "8/8 Housekeeping"

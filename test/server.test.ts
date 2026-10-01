@@ -45,7 +45,7 @@ describe('protocol surface', () => {
     for (const t of tools) {
       expect(t.description!.length).toBeGreaterThan(40);
       expect(t.inputSchema.type).toBe('object');
-      expect(t.annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false, openWorldHint: false });
+      expect(t.annotations).toMatchObject({ title: t.title, readOnlyHint: true, destructiveHint: false, openWorldHint: false });
     }
     const ui = tools.filter((t) => (t._meta as any)?.ui?.resourceUri).map((t) => t.name).sort();
     expect(ui).toEqual(['get_coach', 'get_featured_coaches', 'search_coaches']);
