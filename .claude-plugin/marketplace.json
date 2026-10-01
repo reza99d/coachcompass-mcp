@@ -1,0 +1,15 @@
+{
+  "name": "coachcompass",
+  "owner": { "name": "CoachCompass", "email": "support@coachcompass.co" },
+  "metadata": { "description": "Official CoachCompass plugins for Claude Code." },
+  "plugins": [
+    {
+      "name": "coachcompass",
+      "source": "./plugin",
+      "description": "Find professional coaches (business, life, fitness, relationships) in the CoachCompass directory: search, profiles, prices, availability and coaching articles.",
+      "version": "1.0.0",
+      "category": "productivity",
+      "keywords": ["coaching", "coach", "directory", "career", "leadership", "life coach"]
+    }
+  ]
+}

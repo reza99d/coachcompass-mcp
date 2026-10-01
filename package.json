@@ -1,0 +1,31 @@
+{
+  "name": "coachcompass-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Read-only MCP server for the CoachCompass coach directory (ChatGPT app + Claude connector/plugin)",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build:widget": "node widget/build.mjs",
+    "build": "npm run build:widget && tsc -p tsconfig.json",
+    "start": "node dist/src/server.js",
+    "dev": "npm run build && node dist/src/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.2.0",
+    "@types/node": "^20.19.43",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^2.0.3",
+    "@modelcontextprotocol/node": "^2.1.0",
+    "@modelcontextprotocol/server": "^2.2.0",
+    "zod": "^4.6.5"
+  }
+}

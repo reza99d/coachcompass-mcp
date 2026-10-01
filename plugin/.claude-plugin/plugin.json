@@ -1,0 +1,10 @@
+{
+  "name": "coachcompass",
+  "version": "1.0.0",
+  "description": "Find professional coaches in the CoachCompass directory: search by need, location, language and budget; read profiles, prices and availability; learn about coaching.",
+  "author": { "name": "CoachCompass", "email": "support@coachcompass.co", "url": "https://coachcompass.co" },
+  "homepage": "https://coachcompass.co",
+  "repository": "https://github.com/reza99d/coachcompass-mcp",
+  "license": "MIT",
+  "keywords": ["coaching", "coach", "directory", "career", "leadership", "life coach"]
+}

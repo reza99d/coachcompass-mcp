@@ -1,0 +1,47 @@
+[Unit]
+Description=CoachCompass MCP server (read-only app for ChatGPT/Claude)
+Documentation=https://github.com/reza99d/coachcompass-mcp
+After=network-online.target coachcompass-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ccmcp
+Group=ccmcp
+WorkingDirectory=/opt/coachcompass-mcp/current
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=8791
+Environment=CC_API_BASE=http://127.0.0.1:8788
+Environment=CC_SITE_URL=https://coachcompass.co
+Environment=CC_ALLOWED_HOSTS=coachcompass.co,www.coachcompass.co,127.0.0.1,localhost
+ExecStart=/usr/bin/node dist/src/server.js
+Restart=on-failure
+RestartSec=2
+
+# Hardening: unprivileged user, no writes anywhere, no DB/repo access needed (talks HTTP to the API).
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+UMask=0077
+MemoryMax=400M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target
